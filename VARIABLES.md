@@ -47,6 +47,11 @@ ga_sbp_patch_number: you need to specify which patch number that you are plannin
 
 veritas_group_name: is the group name of Oracle resources on Veritas Cluster if exists.
 
+## [Is Customer Specific](#is_customer_specific)
+
+is_customer_specific: define if some checks inside roles are specific for the customer. Actually only the file [https://github.com/vinidba/sbp_patch/blob/master/roles/validate_oracle_home/tasks/main.yml](https://github.com/vinidba/sbp_patch/blob/master/roles/validate_oracle_home/tasks/main.yml) have specific validations (if a specific mountpoint is mounted over a NFS).
+
+# Contents of file:
 --------------------------------------------------------------------------------------------------------------------------------
 
 
@@ -69,3 +74,6 @@ veritas_group_name: is the group name of Oracle resources on Veritas Cluster if 
 
     # Veritas Group Name
     veritas_group_name: 'ORA_1'
+
+    # Is Customer Specific
+    is_customer_specific: 'Y'

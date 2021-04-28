@@ -21,21 +21,24 @@
     psbp_oracle_home_apply: "{{ validate_oracle_home.stat.lnk_source }}"
   when: validate_oracle_home.stat.islnk == true
 
-# Specific for customer environment, you can remove the following lines.
-- name: check sapcd
-  shell: |
-    mount  | grep sapcd | awk '{print $5}'
-  register: sapcd_check
-  args:
-    warn: false
-  become_user: root
+- block:
 
-- name: end play if sapcd is not nfs
-  fail:
-    msg: "/sapcd is not mounted over a NFS"
-  when: sapcd_check.stdout != 'nfs'
+  - name: check sapcd
+    shell: |
+      mount  | grep sapcd | awk '{print $5}'
+    register: sapcd_check
+    args:
+      warn: false
+    become_user: root
+  
+  - name: end play if sapcd is not nfs
+    fail:
+      msg: "/sapcd is not mounted over a NFS"
+    when: sapcd_check.stdout != 'nfs'
+  
+  - name: continue play if /sapcd is mounted over a nfs
+    debug:
+      msg: "/sapcd is mounted over a NFS, proceeding..."
+    when: sapcd_check.stdout == 'nfs'
 
-- name: continue play if /sapcd is mounted over a nfs
-  debug:
-    msg: "/sapcd is mounted over a NFS, proceeding..."
-  when: sapcd_check.stdout == 'nfs'
+  when: is_customer_specific == 'Y'
