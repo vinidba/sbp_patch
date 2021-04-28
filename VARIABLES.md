@@ -64,8 +64,8 @@ veritas_group_name: is the group name of Oracle resources on Veritas Cluster if 
     - { sbp_hostname: 'XXXDB2', sbp_oracle_user: 'ora2', sbp_db_name: 'DB2', sbp_listener_name: 'LISTENER_DB2', sbp_oracle_home: '/oracle/DB2/121', sbp_oracle_base: '/oracle/DB2/saptrace' }
     - { sbp_hostname: 'XXXDB3', sbp_oracle_user: 'ora3', sbp_db_name: 'DB3', sbp_listener_name: 'LISTENER_DB3', sbp_oracle_home: '/oracle/DB3/121', sbp_oracle_base: '/oracle/DB3/saptrace' }
     
-    # Global Actions | Valid values for ga_sbp_action: 'Pollback' or 'Apply'
+    # Global Actions | Valid values for ga_sbp_action: 'Rollback' or 'Apply'
     ga_sbp_patch_number: '31511219'
 
     # Veritas Group Name
-    veritas_group_name: ORA_1
+    veritas_group_name: 'ORA_1'
