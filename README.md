@@ -31,7 +31,7 @@ $ ansible-playbook install_SBP.yml -e "ga_sbp_action=Rollback"
 
 ### How to choose the hosts and to define the variables for the environment:
 
-To select the hosts where you will run the playbook, edit the file [inventories/SAP_Prod/hosts](https://github.com/vinidba/sbp_patch/tree/master/inventories/hosts).
+To select the hosts where you will run the playbook, edit the file [inventories/SAP_Prod/hosts](https://github.com/vinidba/sbp_patch/tree/master/inventories/SAP_Prod/hosts).
 
 To define the variables, edit the file [inventories/SAP_Prod/group_vars/all.yml](https://github.com/vinidba/sbp_patch/tree/master/inventories/SAP_Prod/group_vars/all.yml).
 
