@@ -5,6 +5,11 @@
     path: "/opt/VRTSvcs/bin/hagrp"
   register: veritas_hagrp
 
+- name: check if Veritas process is running
+  shell: |
+    is_cluster_running=`ps -ef |grep VRTSvcs | grep haclus | grep -v grep | wc -l`
+  register: is_cluster_running
+
 - block:
 
   - name: register group {{ veritas_group_name }} state
@@ -87,4 +92,4 @@
  
     when: is_cluster_frozen.stdout == '1' and cluster_operation == 'unfreeze'
      
-  when: veritas_hagrp.stat.path is defined
+  when: ( veritas_hagrp.stat.path is defined and is_cluster_running.stdout == '1' )
