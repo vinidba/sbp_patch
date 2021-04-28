@@ -1,0 +1,11 @@
+---
+
+- name: end play if / filesystem has less than 15G available
+  assert:
+    that: "{{ item.size_available > 16106127360 }}"
+    fail_msg: "Filesytem / has less than 15G available"
+    quiet: yes
+  with_items: "{{ ansible_mounts }}"
+  loop_control:
+    label: "{{ item.mount }}"
+  when: item.mount == '/' 

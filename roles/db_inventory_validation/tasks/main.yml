@@ -1,0 +1,20 @@
+---
+
+- block:
+
+  - name: validate inventory for DataPatch using DBMS_SQLPATCH
+    shell: >
+      printf 'set echo off feed off head off pages 0 termout on;\nselect dbms_sqlpatch.verify_queryable_inventory from dual;' | $ORACLE_HOME/bin/sqlplus -S / as sysdba
+    environment:
+      ORACLE_HOME: "{{ psbp_oracle_home }}"
+      ORACLE_BASE: "{{ psbp_oracle_base }}"
+      ORACLE_SID: "{{psbp_db_name }}"
+    become_user: "{{ psbp_oracle_user }}"
+    register: validate_inventory_db
+  
+  - name: end playbook if error is found during DBMS_SQLPATCH execution
+    fail:
+      msg: "Error found during DBMS_SQLPATCH execution"
+    when: validate_inventory_db.stdout != 'OK'
+
+  when: database_role == 'PRIMARY' 

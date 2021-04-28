@@ -1,0 +1,62 @@
+---
+
+- name: print ga_sbp_action value
+  debug:
+    msg: "{{ ga_sbp_action }}"
+
+- name: end play if ga_sbp_action is wrongly defined
+  fail:
+    msg: "Variable ga_sbp_action is wrongly defined"
+  when: ( ga_sbp_action != 'Apply' and ga_sbp_action != 'Rollback' )
+
+- name: Define global facts for SBP Patching related to Servers
+  set_fact:
+    mopatch_apply_success_line: "Overall Status: COMPLETE"
+    catsbp_success_line: "Overall Status: COMPLETE"
+    opatch_rollback_idFile_success_line: "OPatch succeeded."
+    opatch_rollback_success_line: "OPatch succeeded."
+    rmsbp_success_line: "Overall Status: COMPLETE"
+    create_pfile: "N"
+    recreate_spfile: "N"
+
+- name: Define exclusive facts for SBP Patching related to Servers
+  set_fact:
+    psbp_hostname: "{{ item.sbp_hostname }}"
+    psbp_oracle_user: "{{ item.sbp_oracle_user }}"
+    psbp_db_name: "{{ item.sbp_db_name }}"
+    psbp_listener_name: "{{ item.sbp_listener_name }}"
+    psbp_oracle_home: "{{ item.sbp_oracle_home }}"
+    psbp_oracle_home_apply: "{{ item.sbp_oracle_home }}"
+    psbp_oracle_base: "{{ item.sbp_oracle_base }}"
+    psbp_stage_directory: "/sapcd/stage_SBP_Ansible/{{ item.sbp_hostname }}/{{ item.sbp_db_name }}"
+  with_items: "{{ SBP_Hosts }}"
+  when: ( item.sbp_hostname == ansible_hostname )
+
+
+- name: Define global facts for SBP Patching related to SBP Files
+  set_fact:
+    psbp_patch_file: "{{ item.sbp_patch_file }}"
+    psbp_dbbp_patch_file: "{{ item.sbp_dbbp_patch_file }}"
+    psbp_opatch_file: "{{ item.sbp_opatch_file }}"
+    psbp_month_year: "{{ item.sbp_month_year }}"
+    psbp_patch_name: "{{ item.sbp_patch_name }}"
+    psbp_patch_number: "{{ item.sbp_patch_number }}"  
+    psbp_post_install_sql: "{{ item.sbp_post_install_sql }}"
+  with_items: "{{ SBP_Files }}"
+  when: ( item.sbp_patch_number == ga_sbp_patch_number )
+
+- name: transform psbp_patch_name for opatch lspatches purpose
+  set_fact:
+    psbp_patch_name_opatch: "{{ psbp_patch_name  | regex_replace('([A-Z])\\_([0-9]{2})([0-9]{1})([0-9]{1})([0-9]{1})([0-9]{6})\\_([0-9]{6})','\\1 \\2.\\3.\\4.\\5.\\6 \\7') }}"
+
+- name: register the lnk_source in case Oracle Home is using a symbolic link
+  stat:
+    path: "{{ psbp_oracle_home }}"
+  register: validate_oracle_home
+  become_user: "{{ psbp_oracle_user }}"
+
+- name: Define Oracle Home variable to the right location for apply/rollback purposes
+  set_fact:
+    psbp_oracle_home_apply: "{{ validate_oracle_home.stat.lnk_source }}"
+  when: validate_oracle_home.stat.islnk == true
+

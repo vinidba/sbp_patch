@@ -1,0 +1,52 @@
+---
+
+- block:
+
+  - name: create directory for SPB Patch Files
+    file:
+      dest: "{{ psbp_stage_directory }}"
+      state: directory
+      owner: "{{ psbp_oracle_user }}"
+      group: dba
+      mode: 0755
+    become_user: root
+  
+  - name: copy SBP Patch Files to Stage Directory
+    copy: 
+      src: "{{ SBP_files_source }}/{{ psbp_month_year }}/{{ psbp_patch_file }}"
+      dest: "{{ psbp_stage_directory }}"
+    become_user: "{{ psbp_oracle_user }}"
+  
+  - name: copy SBP DBBP Patch Files to Stage Directory
+    copy: 
+      src: "{{ SBP_files_source }}/{{ psbp_month_year }}/{{ psbp_dbbp_patch_file }}"
+      dest: "{{ psbp_stage_directory }}"
+    become_user: "{{ psbp_oracle_user }}"
+  
+  - name: copy SBP OPatch Files to Stage Directory
+    copy: 
+      src: "{{ SBP_files_source }}/{{ psbp_month_year }}/{{ psbp_opatch_file }}"
+      dest: "{{ psbp_stage_directory }}"
+    become_user: "{{ psbp_oracle_user }}"
+
+  - name: check if patch directory is already created over SAPBUNDLE
+    stat:
+      path: "{{ psbp_oracle_home }}/sapbundle/{{ psbp_patch_name }}"
+    register: sapbundle_patch_name
+
+  - block:
+
+      - name: install SBP OPatch and SBP Patch Files for SBP Patch
+        shell: |
+          mv {{ psbp_oracle_home }}/OPatch {{ psbp_oracle_home }}/OPatch-pre-{{ psbp_patch_name }}
+          {{ psbp_oracle_home }}/bin/unzip -qd {{ psbp_oracle_home }} {{ psbp_stage_directory }}/{{ psbp_opatch_file }} -x SIGNATURE.SMF
+          {{ psbp_oracle_home }}/bin/unzip -qd {{ psbp_oracle_home }}/sapbundle {{ psbp_stage_directory }}/{{ psbp_patch_file }} '{{ psbp_patch_name }}/MOPatch/*'
+          test -d {{ psbp_oracle_home }}/MOPatch && mv {{ psbp_oracle_home }}/MOPatch {{ psbp_oracle_home }}/MOPatch-pre-{{ psbp_patch_name }}
+          mv {{ psbp_oracle_home }}/sapbundle/{{ psbp_patch_name }}/MOPatch {{ psbp_oracle_home }}/MOPatch
+        become_user: "{{ psbp_oracle_user }}"
+        args:
+          warn: false
+
+    when: sapbundle_patch_name.stat.exists == false
+    
+  when: ga_sbp_action == 'Apply'

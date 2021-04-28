@@ -1,0 +1,22 @@
+---
+
+- name: validate DB Connection
+  shell: >
+    printf "set echo off feed off head off pages 0 termout on;\nalter session set nls_date_format='dd/mm/yyyy hh24:mi';\nselect sysdate from dual;" | $ORACLE_HOME/bin/sqlplus -S / as sysdba
+  environment:
+    ORACLE_HOME: "{{ psbp_oracle_home }}"
+    ORACLE_BASE: "{{ psbp_oracle_base }}"
+    ORACLE_SID: "{{ psbp_db_name }}"
+  become_user: "{{ psbp_oracle_user }}"
+  register: db_sysdate
+
+- name: display db sysdate
+  debug:
+    msg: "{{ db_sysdate.stdout }}"
+
+- name: display variables
+  debug:
+    msg:
+      - "{{ psbp_oracle_home }}"
+      - "{{ psbp_db_name }}"
+      - "{{ psbp_oracle_user }}"

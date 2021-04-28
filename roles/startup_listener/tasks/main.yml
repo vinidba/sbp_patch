@@ -1,0 +1,13 @@
+---
+
+- name: startup listener
+  shell: |
+    $ORACLE_HOME/bin/lsnrctl start {{ psbp_listener_name }}
+  environment:
+    ORACLE_HOME: "{{ psbp_oracle_home }}"
+    ORACLE_BASE: "{{ psbp_oracle_base }}"
+    PATH: "{{ psbp_oracle_home }}/bin:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/usr/sap/DX1/SYS/exe/uc/linuxx86_64:/usr/sap/DX1/SYS/exe/run:/oracle/DX1:."
+  become_user: "{{ psbp_oracle_user }}"
+  ignore_errors: true
+
+

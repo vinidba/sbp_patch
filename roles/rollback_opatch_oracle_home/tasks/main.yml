@@ -1,0 +1,35 @@
+---
+
+- block:
+
+  - name: remove .mopatchpid file
+    file:
+      path: "{{ psbp_oracle_home }}/.mopatchpid"
+      state: absent
+    become_user: "{{ psbp_oracle_user }}"
+
+  - name: rollback SBP idFile
+    shell: |
+      $ORACLE_HOME/OPatch/opatch nrollback -silent -local -idFile $ORACLE_HOME/sapbundle/{{ psbp_patch_name }}/rollback_plain_rdbms.lst
+    environment:
+      ORACLE_HOME: "{{ psbp_oracle_home_apply }}"
+      ORACLE_SID: "{{ psbp_db_name }}"
+      ORACLE_BASE: "{{ psbp_oracle_base }}"
+      PATH: "{{ psbp_oracle_home }}/bin:{{ psbp_oracle_home }}/OPatch:{{ psbp_oracle_home }}/MOPatch:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/usr/sap/DX1/SYS/exe/uc/linuxx86_64:/usr/sap/DX1/SYS/exe/run:/oracle/DX1:."
+    become_user: "{{ psbp_oracle_user }}"
+    register: rollback_idFile
+    failed_when: opatch_rollback_idFile_success_line|string not in rollback_idFile.stdout
+  
+  - name: rollback SBP
+    shell: |
+      $ORACLE_HOME/OPatch/opatch rollback -silent -local -id {{ psbp_patch_number }} -all_subpatches
+    environment:
+      ORACLE_HOME: "{{ psbp_oracle_home_apply }}"
+      ORACLE_SID: "{{ psbp_db_name }}"
+      ORACLE_BASE: "{{ psbp_oracle_base }}"
+      PATH: "{{ psbp_oracle_home }}/bin:{{ psbp_oracle_home }}/OPatch:{{ psbp_oracle_home }}/MOPatch:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/usr/sap/DX1/SYS/exe/uc/linuxx86_64:/usr/sap/DX1/SYS/exe/run:/oracle/DX1:."
+    become_user: "{{ psbp_oracle_user }}"
+    register: rollback_sbp
+    failed_when: opatch_rollback_success_line|string not in rollback_sbp.stdout
+
+  when: ga_sbp_action == 'Rollback'

@@ -1,0 +1,40 @@
+---
+
+- block:
+
+  - name: execute catsbp post-install step
+    shell: |
+      $ORACLE_HOME/sapbundle/catsbp
+    environment:
+      ORACLE_HOME: "{{ psbp_oracle_home }}"
+      ORACLE_SID: "{{ psbp_db_name }}"
+      ORACLE_BASE: "{{ psbp_oracle_base }}"
+      PATH: "{{ psbp_oracle_home }}/bin:{{ psbp_oracle_home }}/OPatch:{{ psbp_oracle_home }}/MOPatch:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/usr/sap/DX1/SYS/exe/uc/linuxx86_64:/usr/sap/DX1/SYS/exe/run:/oracle/DX1:."
+    become_user: "{{ psbp_oracle_user }}"
+    register: catsbp_db 
+    failed_when: catsbp_success_line|string not in catsbp_db.stdout
+    when: database_role == 'PRIMARY'
+  
+  - name: copy SBP Post Install SQL File to Stage Directory
+    copy: 
+      src: "{{ SBP_files_source }}/{{ psbp_month_year }}/{{ psbp_post_install_sql }}"
+      dest: "{{ psbp_stage_directory }}"
+    become_user: "{{ psbp_oracle_user }}"
+  
+  - name: change parameters if required
+    shell: >
+      printf 'set echo on feed on termount on;\nspool {{ psbp_stage_directory }}/post-install.log;\n@{{ psbp_stage_directory }}/{{ psbp_post_install_sql }}' | $ORACLE_HOME/bin/sqlplus / as sysdba
+    environment:
+      ORACLE_HOME: "{{ psbp_oracle_home }}"
+      ORACLE_BASE: "{{ psbp_oracle_base }}"
+      ORACLE_SID: "{{psbp_db_name }}"
+    become_user: "{{ psbp_oracle_user }}"
+    when: psbp_post_install_sql == 'post-install.sql'
+  
+  - name: clean up stage directory
+    file:
+      path: "{{ psbp_stage_directory }}"
+      state: absent
+    become_user: root
+
+  when: ga_sbp_action == 'Apply'

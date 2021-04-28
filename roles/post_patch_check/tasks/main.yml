@@ -1,0 +1,84 @@
+---
+
+- block:
+
+  - name: execute opatch to check if patches were installed
+    shell: |
+      $ORACLE_HOME/OPatch/opatch lspatches | grep '{{ psbp_patch_name_opatch }}\|{{ psbp_patch_number }}'
+    environment:
+      ORACLE_HOME: "{{ psbp_oracle_home }}"
+      ORACLE_BASE: "{{ psbp_oracle_base }}"
+      ORACLE_SID: "{{psbp_db_name }}"
+    become_user: "{{ psbp_oracle_user }}"
+    register: opatch_lspatches_output
+ 
+  - block:
+  
+    - name: copy post_patch SQL script to DB Server
+      template:
+        src: "{{ SBP_files_source }}/post_patch_check.sql.j2"
+        dest: "{{ psbp_oracle_home }}/post_patch_check.sql"
+        mode: 0755
+      become_user: "{{ psbp_oracle_user }}"
+   
+    - name: execute post_patch SQL script on DB 
+      shell: >
+        $ORACLE_HOME/bin/sqlplus -S / as sysdba @{{ psbp_oracle_home }}/post_patch_check.sql
+      environment:
+        ORACLE_HOME: "{{ psbp_oracle_home }}"
+        ORACLE_BASE: "{{ psbp_oracle_base }}"
+        ORACLE_SID: "{{psbp_db_name }}"
+      become_user: "{{ psbp_oracle_user }}"
+    
+    - name: get post_patch_check.log contents
+      shell: |
+        cat {{ psbp_oracle_home }}/post_patch_check.log
+      register: post_patch_check
+      become_user: "{{ psbp_oracle_user }}"
+    
+    - name: display post_patch_check_db_side output
+      debug: 
+        msg: 
+          - "---------------------------------------------"
+          - ""
+          - "Patches installed on {{ psbp_hostname }}:"
+          - "{{ opatch_lspatches_output.stdout_lines }}"
+          - ""
+          - "---------------------------------------------"
+          - ""
+          - "Patches applied on {{ psbp_db_name }}:"
+          - "{{ post_patch_check.stdout_lines }}"
+          - ""
+          - "---------------------------------------------"
+      become_user: "{{ psbp_oracle_user }}"
+    
+    - name: clean up post_patch SQL script from DB Server
+      file:
+        path: "{{ psbp_oracle_home }}/post_patch_check.sql"
+        state: absent
+      become_user: "{{ psbp_oracle_user }}"
+    
+    - name: clean up post_patch_check.log from DB Server
+      file:
+        path: "{{ psbp_oracle_home }}/post_patch_check.log"
+        state: absent
+      become_user: "{{ psbp_oracle_user }}"
+  
+    when: database_role == 'PRIMARY'
+  
+  - block:
+  
+    - name: display post_patch_check_opatch_side output
+      debug: 
+        msg: 
+          - "---------------------------------------------"
+          - ""
+          - "Patches installed on {{ psbp_oracle_home }}"
+          - "{{ opatch_lspatches_output.stdout_lines }}"
+          - ""
+          - "---------------------------------------------"
+      become_user: "{{ psbp_oracle_user }}"
+    
+    when: database_role == 'STANDBY' 
+  
+  when: ga_sbp_action == 'Apply'

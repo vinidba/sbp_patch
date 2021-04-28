@@ -1,0 +1,19 @@
+---
+
+- hosts: all
+  gather_facts: true
+  any_errors_fatal: true
+  become: true
+  pre_tasks:
+
+  - import_tasks: tasks/setup_oracle_sbp_facts.yml
+ 
+  roles:
+
+    - { role: validate_oracle_home } 
+    - { role: validate_db_role } 
+    - { role: manage_veritas_cluster, cluster_operation : 'status' }
+    - { role: validate_disk_space }
+    - { role: validate_patch_info }
+    - { role: db_inventory_validation }
+    - { role: copy_opatch_and_patch_SBP }

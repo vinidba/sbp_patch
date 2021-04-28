@@ -1,0 +1,18 @@
+---
+
+- block:
+
+  - name: rollback SBP OPatch and MOPatch
+    shell: |
+      cd {{ psbp_oracle_home }}
+      rm -rf OPatch-after-{{ psbp_patch_name }} 2>/dev/null
+      rm -rf OPatch-after-{{ psbp_patch_name }} 2>/dev/null
+      mv OPatch OPatch-after-{{ psbp_patch_name }}
+      mv MOPatch MOPatch-after-{{ psbp_patch_name }}
+      mv OPatch-pre-{{ psbp_patch_name }} OPatch
+      mv MOPatch-pre-{{ psbp_patch_name }} MOPatch
+    become_user: "{{ psbp_oracle_user }}"
+    args:
+      warn: false
+     
+  when: ga_sbp_action == 'Rollback'

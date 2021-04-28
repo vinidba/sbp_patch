@@ -1,0 +1,17 @@
+---
+
+- block:
+
+  - name: execute rmsbp to rollback SBP from DB
+    shell: |
+      $ORACLE_HOME/sapbundle/rmsbp
+    environment:
+      ORACLE_HOME: "{{ psbp_oracle_home }}"
+      ORACLE_SID: "{{ psbp_db_name }}"
+      ORACLE_BASE: "{{ psbp_oracle_base }}"
+      PATH: "{{ psbp_oracle_home }}/bin:{{ psbp_oracle_home }}/OPatch:{{ psbp_oracle_home }}/MOPatch:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/usr/sap/DX1/SYS/exe/uc/linuxx86_64:/usr/sap/DX1/SYS/exe/run:/oracle/DX1:."
+    become_user: "{{ psbp_oracle_user }}"
+    register: rmsbp_db
+    failed_when: rmsbp_success_line|string not in rmsbp_db.stdout
+
+  when: ( ga_sbp_action == 'Rollback' and database_role == 'PRIMARY' )

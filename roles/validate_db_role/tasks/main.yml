@@ -1,0 +1,26 @@
+---
+
+- name: get the DB role from database
+  shell: >
+    printf 'set echo off feed off head off pages 0 termout on;\nselect database_role from v$database;' | $ORACLE_HOME/bin/sqlplus -S / as sysdba
+  environment:
+    ORACLE_HOME: "{{ psbp_oracle_home }}"
+    ORACLE_BASE: "{{ psbp_oracle_base }}"
+    ORACLE_SID: "{{psbp_db_name }}"
+  become_user: "{{ psbp_oracle_user }}"
+  register: database_role_validation
+
+- name: define variable for database_role if role is Physical Standby
+  set_fact:
+    database_role: 'STANDBY'
+  when: database_role_validation.stdout == 'PHYSICAL STANDBY'
+
+- name: define variable for database_role if role is Primary
+  set_fact:
+    database_role: 'PRIMARY'
+  when: database_role_validation.stdout == 'PRIMARY'
+
+- name: end_play if database_role is not Primary or Physical Standby
+  fail:
+    msg: "Database Role is different than Primary or Physical Standby"
+  when: ( database_role_validation.stdout != 'PRIMARY' and database_role_validation.stdout != 'PHYSICAL STANDBY' )

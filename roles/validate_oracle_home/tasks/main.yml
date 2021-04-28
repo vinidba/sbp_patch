@@ -1,0 +1,41 @@
+---
+
+- name: register the lnk_source in case Oracle Home is using a symbolic link
+  stat:
+    path: "{{ psbp_oracle_home }}"
+  register: validate_oracle_home
+  become_user: "{{ psbp_oracle_user }}"
+
+- name: display message if Oracle Home is a symbolic link
+  debug:
+    msg: "The ORACLE_HOME {{ psbp_oracle_home }} is a symbolic link. For mopatch purpose the physical location ({{ psbp_oracle_home_apply }}) it will be used instead {{ psbp_oracle_home }}."
+  when: validate_oracle_home.stat.islnk == true
+
+- name: continue if Oracle Home is not a symbolic link
+  debug:
+    msg: "The {{ psbp_oracle_home }} is not a symbolic link, proceeding..."
+  when: validate_oracle_home.stat.islnk == false
+
+- name: Define Oracle Home variable to the right location for apply/rollback purposes
+  set_fact:
+    psbp_oracle_home_apply: "{{ validate_oracle_home.stat.lnk_source }}"
+  when: validate_oracle_home.stat.islnk == true
+
+# Specific for customer environment, you can remove the following lines.
+- name: check sapcd
+  shell: |
+    mount  | grep sapcd | awk '{print $5}'
+  register: sapcd_check
+  args:
+    warn: false
+  become_user: root
+
+- name: end play if sapcd is not nfs
+  fail:
+    msg: "/sapcd is not mounted over a NFS"
+  when: sapcd_check.stdout != 'nfs'
+
+- name: continue play if /sapcd is mounted over a nfs
+  debug:
+    msg: "/sapcd is mounted over a NFS, proceeding..."
+  when: sapcd_check.stdout == 'nfs'

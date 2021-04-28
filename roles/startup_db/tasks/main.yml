@@ -1,0 +1,43 @@
+---
+
+- name: startup database open
+  shell: >
+    printf "startup {{ startup_mode }};\n" | $ORACLE_HOME/bin/sqlplus / as sysdba
+  environment:
+    ORACLE_HOME: "{{ psbp_oracle_home }}"
+    ORACLE_BASE: "{{ psbp_oracle_base }}"
+    ORACLE_SID: "{{psbp_db_name }}"
+  become_user: "{{ psbp_oracle_user }}"
+  when: ( startup_mode == 'open' and database_role == 'PRIMARY' )
+
+- name: startup database mount on DR
+  shell: >
+    printf "startup {{ startup_mode }};\n" | $ORACLE_HOME/bin/sqlplus / as sysdba
+  environment:
+    ORACLE_HOME: "{{ psbp_oracle_home }}"
+    ORACLE_BASE: "{{ psbp_oracle_base }}"
+    ORACLE_SID: "{{psbp_db_name }}"
+  become_user: "{{ psbp_oracle_user }}"
+  when: ( startup_mode == 'mount' and database_role == 'STANDBY' )
+
+- name: startup database in nomount and create a pfile before post-install
+  shell: |
+    printf "startup {{ startup_mode }};\ncreate pfile='{{ psbp_oracle_home }}/dbs/init{{ psbp_db_name}}-pre-{{ psbp_month_year}}-{{ psbp_patch_number}}.ora' from spfile;\n" | $ORACLE_HOME/bin/sqlplus / as sysdba
+  environment:
+    ORACLE_HOME: "{{ psbp_oracle_home }}"
+    ORACLE_BASE: "{{ psbp_oracle_base }}"
+    ORACLE_SID: "{{psbp_db_name }}"
+  become_user: "{{ psbp_oracle_user }}"
+  when: startup_mode == 'nomount' and create_pfile == 'Y' and ga_sbp_action == 'Apply'
+
+- name: startup database in nomount with pfile and recreate spfile from pfile for rollback
+  shell: |
+    printf "startup {{ startup_mode }} pfile={{ psbp_oracle_home }}/dbs/init{{ psbp_db_name}}-pre-{{ psbp_month_year}}-{{ psbp_patch_number}}.ora;\ncreate spfile from pfile='{{ psbp_oracle_home }}/dbs/init{{ psbp_db_name}}-pre-{{ psbp_month_year}}-{{ psbp_patch_number}}.ora';\n" | $ORACLE_HOME/bin/sqlplus / as sysdba
+  environment:
+    ORACLE_HOME: "{{ psbp_oracle_home }}"
+    ORACLE_BASE: "{{ psbp_oracle_base }}"
+    ORACLE_SID: "{{psbp_db_name }}"
+  become_user: "{{ psbp_oracle_user }}"
+  when: startup_mode == 'nomount' and recreate_spfile == 'Y' and ga_sbp_action == 'Rollback'
+
+

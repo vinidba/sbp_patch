@@ -1,0 +1,27 @@
+---
+
+- block:
+
+  - name: stop MRP
+    shell: >
+      printf "alter database recover managed standby database cancel;\n" | $ORACLE_HOME/bin/sqlplus / as sysdba
+    environment:
+      ORACLE_HOME: "{{ psbp_oracle_home }}"
+      ORACLE_BASE: "{{ psbp_oracle_base }}"
+      ORACLE_SID: "{{psbp_db_name }}"
+    become_user: "{{ psbp_oracle_user }}"
+    when: mrp_mode == 'stop'
+  
+  - name: start MRP
+    shell: >
+      printf "alter database recover managed standby database disconnect from session;\n" | $ORACLE_HOME/bin/sqlplus / as sysdba
+    environment:
+      ORACLE_HOME: "{{ psbp_oracle_home }}"
+      ORACLE_BASE: "{{ psbp_oracle_base }}"
+      ORACLE_SID: "{{psbp_db_name }}"
+    become_user: "{{ psbp_oracle_user }}"
+    when: mrp_mode == 'start'
+
+  when: database_role == 'STANDBY'
+
+

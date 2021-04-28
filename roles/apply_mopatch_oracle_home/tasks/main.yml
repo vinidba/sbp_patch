@@ -1,0 +1,23 @@
+---
+
+- block:
+
+  - name: remove .mopatchpid file
+    file:
+      path: "{{ psbp_oracle_home }}/.mopatchpid"
+      state: absent
+    become_user: "{{ psbp_oracle_user }}"
+
+  - name: apply SBP into Oracle Home
+    shell: |
+      $ORACLE_HOME/MOPatch/mopatch.sh -v -s {{ psbp_stage_directory }}/{{ psbp_patch_file }}
+    environment:
+      ORACLE_HOME: "{{ psbp_oracle_home_apply }}"
+      ORACLE_SID: "{{ psbp_db_name }}"
+      ORACLE_BASE: "{{ psbp_oracle_base }}"
+      PATH: "{{ psbp_oracle_home }}/bin:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/usr/sap/DX1/SYS/exe/uc/linuxx86_64:/usr/sap/DX1/SYS/exe/run:/oracle/DX1:."
+    become_user: "{{ psbp_oracle_user }}"
+    register: apply_oh_mopatch
+    failed_when: mopatch_apply_success_line|string not in apply_oh_mopatch.stdout
+
+  when: ga_sbp_action == 'Apply'

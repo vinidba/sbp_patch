@@ -1,0 +1,86 @@
+---
+
+- hosts: all
+  gather_facts: true
+  any_errors_fatal: true
+  become: true
+  pre_tasks:
+
+  - import_tasks: tasks/setup_oracle_sbp_facts.yml
+ 
+  roles:
+
+    - { role: validate_oracle_home }
+    - { role: validate_db_role }
+    - { role: validate_disk_space }
+    - { role: validate_patch_info }
+    - { role: db_inventory_validation }
+    - { role: manage_veritas_cluster, cluster_operation : 'freeze' }
+    - { role: copy_opatch_and_patch_SBP }
+    - { role: shutdown_listener }
+    - { role: manage_mrp, mrp_mode: 'stop' }
+    - { role: shutdown_db, artifact: '1' }
+    - { role: apply_mopatch_oracle_home }
+    - { role: startup_db, startup_mode: 'nomount', create_pfile: 'Y' }
+    - { role: startup_db, startup_mode: 'nomount', recreate_spfile: 'Y' }
+    - { role: shutdown_db, artifact: '2' }
+    - { role: rollback_opatch_oracle_home }
+    - { role: startup_db, startup_mode: 'open', artifact: '1' }
+    - { role: startup_db, startup_mode: 'mount', artifact: '1' }
+    - { role: rollback_SBP_db } 
+    - { role: post_install }
+    - { role: shutdown_db, artifact: '3' }
+    - { role: startup_db, startup_mode: 'open', artifact: '2' }
+    - { role: startup_db, startup_mode: 'mount', artifact: '2' }
+    - { role: startup_listener }
+    - { role: rollback_opatch_and_mopatch }
+    - { role: manage_mrp, mrp_mode: 'start' }
+    - { role: manage_veritas_cluster, cluster_operation: 'unfreeze' }
+    - { role: post_patch_check }
+
+# The roles above will be executed depending if the method choosed is apply or rollback in the following order:
+#
+# Apply_SBP:
+#
+#    - { role: validate_oracle_home }
+#    - { role: validate_db_role }
+#    - { role: validate_disk_space }
+#    - { role: validate_patch_info }
+#    - { role: db_inventory_validation }
+#    - { role: manage_veritas_cluster, cluster_operation : 'freeze' }
+#    - { role: copy_opatch_and_patch_SBP }
+#    - { role: shutdown_listener }
+#    - { role: manage_mrp, mrp_mode: 'stop' } # only when you are on Standby DB
+#    - { role: shutdown_db, artifact: '1' }
+#    - { role: apply_mopatch_oracle_home }
+#    - { role: startup_db, startup_mode: 'nomount', create_pfile: 'Y' }
+#    - { role: shutdown_db, artifact: '2' }
+#    - { role: startup_db, startup_mode: 'open', artifact: '1' }
+#    - { role: post_install }
+#    - { role: shutdown_db, artifact: '3' }
+#    - { role: startup_db, startup_mode: 'open', artifact: '2' }
+#    - { role: startup_listener }
+#    - { role: manage_mrp, mrp_mode: 'start' } # only when you are on Standby DB
+#    - { role: manage_veritas_cluster, cluster_operation: 'unfreeze' }
+#    - { role: post_patch_check }
+#
+# 
+# Rollback_SBP:
+#
+#    - { role: validate_oracle_home }
+#    - { role: validate_db_role }
+#    - { role: validate_disk_space }
+#    - { role: validate_patch_info }
+#    - { role: manage_veritas_cluster, cluster_operation : 'freeze' }
+#    - { role: shutdown_listener }
+#    - { role: shutdown_db, artifact: '1' }
+#    - { role: startup_db, startup_mode: 'nomount', recreate_spfile: 'Y' }
+#    - { role: shutdown_db, artifact: '2' }
+#    - { role: rollback_opatch_oracle_home }
+#    - { role: startup_db, startup_mode: 'open', artifact: '1' }
+#    - { role: rollback_SBP_db }
+#    - { role: shutdown_db, artifact: '3' }
+#    - { role: startup_db, startup_mode: 'open', artifact: '2' }
+#    - { role: startup_listener }
+#    - { role: rollback_opatch_and_mopatch }
+#    - { role: manage_veritas_cluster, cluster_operation: 'unfreeze' }

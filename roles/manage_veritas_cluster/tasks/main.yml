@@ -1,0 +1,90 @@
+---
+
+- name: check if Veritas binaries exists
+  stat:
+    path: "/opt/VRTSvcs/bin/hagrp"
+  register: veritas_hagrp
+
+- block:
+
+  - name: register group {{ veritas_group_name }} state
+    shell: |
+      /opt/VRTSvcs/bin/hagrp -state {{ veritas_group_name }} |grep {{ psbp_hostname }} | awk '{print $4}' | cut -d "|" -f2
+    register: ora_1_state
+    become_user: root
+
+  - name: end play if group {{ veritas_group_name }} is not online
+    fail: 
+      msg: "Group {{ veritas_group_name }} is not online on {{ psbp_hostname }}. Please verify it."
+    when: ora_1_state.stdout != 'ONLINE' and cluster_operation == 'freeze'
+
+  - name: check if cluster is frozen
+    shell: |
+      /opt/VRTSvcs/bin/hagrp -display | grep {{ veritas_group_name }} | grep TFrozen | awk '{print $4}'
+    register: is_cluster_frozen
+
+  - name: end play if cluster is already frozen
+    debug: 
+      msg: "Cluster is already frozen on server {{ psbp_hostname }}"
+    when: is_cluster_frozen.stdout == '1' and cluster_operation == 'freeze'
+
+  - name: end play if display cluster is already unfrozen
+    debug: 
+      msg: "Cluster is already unfrozen on server {{ psbp_hostname }}"
+    when: is_cluster_frozen.stdout == '0' and cluster_operation == 'unfreeze'
+
+  - block:
+  
+    - name: show cluster status
+      debug:
+        msg: "Cluster is frozen on server {{ psbp_hostname }}"
+      when: is_cluster_frozen.stdout == '1'
+    
+    - name: show cluster status
+      debug:
+        msg: "Cluster is unfrozen on server {{ psbp_hostname }}"
+      when: is_cluster_frozen.stdout == '0'
+
+    when: cluster_operation == 'status'
+  
+  - block:
+  
+    - name: freeze the cluster
+      shell: |
+        /opt/VRTSvcs/bin/hagrp -freeze {{ veritas_group_name }}
+      become_user: root
+
+    - name: check if cluster was frozen
+      shell: | 
+        /opt/VRTSvcs/bin/hagrp -display | grep {{ veritas_group_name }} | grep TFrozen | awk '{print $4}'
+      register: was_cluster_frozen
+      become_user: root
+      
+    - name: display cluster status
+      debug:
+        msg: "Cluster has been frozen on server {{ psbp_hostname }}."
+      when: was_cluster_frozen.stdout == '1'
+ 
+    when: is_cluster_frozen.stdout == '0' and cluster_operation == 'freeze'
+     
+  - block:
+  
+    - name: unfreeze the cluster
+      shell: |
+        /opt/VRTSvcs/bin/hagrp -unfreeze {{ veritas_group_name }}
+      become_user: root
+
+    - name: check if cluster was unfrozen
+      shell: | 
+        /opt/VRTSvcs/bin/hagrp -display | grep {{ veritas_group_name }} | grep TFrozen | awk '{print $4}'
+      register: was_cluster_unfrozen
+      become_user: root
+      
+    - name: display cluster status
+      debug:
+        msg: "Cluster has been unfrozen on server {{ psbp_hostname }}."
+      when: was_cluster_unfrozen.stdout == '0'
+ 
+    when: is_cluster_frozen.stdout == '1' and cluster_operation == 'unfreeze'
+     
+  when: veritas_hagrp.stat.path is defined

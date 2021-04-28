@@ -1,0 +1,35 @@
+---
+
+- block:
+
+  - name: check if SBP Patch Directory exists
+    stat:
+      path: "{{ psbp_oracle_home }}/sapbundle/{{ psbp_patch_name }}/rollback_plain_rdbms.lst"
+    register: oracle_home_sapbundle_rollback_plain_file
+
+  - name: end play if oracle_home_sapbundle_rollback_plain_file does not exists
+    fail:
+      msg: "File $ORACLE_HOME/sapbundle/<<patch_name>>/rollback_plain_rdbms.lst does not exists"
+    when: ( oracle_home_sapbundle_rollback_plain_file.stat is not defined )
+
+  when: ( ga_sbp_action == 'Rollback' )
+
+- block:
+ 
+  - name: check patches installed
+    shell: |
+      $ORACLE_HOME/OPatch/opatch lspatches
+    environment:
+      ORACLE_HOME: "{{ psbp_oracle_home }}"
+      ORACLE_BASE: "{{ psbp_oracle_base }}"
+      PATH: "{{ psbp_oracle_home }}/bin:/usr/local/bin:/bin:/usr/bin:/usr/local/sbin:/usr/sbin:/usr/sap/DX1/SYS/exe/uc/linuxx86_64:/usr/sap/DX1/SYS/exe/run:/oracle/DX1:."
+    become_user: "{{ psbp_oracle_user }}"
+    register: opatch_lspatches
+ 
+  - name: end play if patch is already installed
+    fail:
+      msg: "Patch is already installed"
+    when: psbp_patch_number in opatch_lspatches.stdout
+
+  when: ( ga_sbp_action == 'Apply' )
+
