@@ -49,14 +49,3 @@
   set_fact:
     psbp_patch_name_opatch: "{{ psbp_patch_name  | regex_replace('([A-Z])\\_([0-9]{2})([0-9]{1})([0-9]{1})([0-9]{1})([0-9]{6})\\_([0-9]{6})','\\1 \\2.\\3.\\4.\\5.\\6 \\7') }}"
 
-- name: register the lnk_source in case Oracle Home is using a symbolic link
-  stat:
-    path: "{{ psbp_oracle_home }}"
-  register: validate_oracle_home
-  become_user: "{{ psbp_oracle_user }}"
-
-- name: Define Oracle Home variable to the right location for apply/rollback purposes
-  set_fact:
-    psbp_oracle_home_apply: "{{ validate_oracle_home.stat.lnk_source }}"
-  when: validate_oracle_home.stat.islnk == true
-
