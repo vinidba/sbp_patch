@@ -7,7 +7,7 @@
 
 - name: check if Veritas process is running
   shell: |
-    is_cluster_running=`ps -ef |grep VRTSvcs | grep haclus | grep -v grep | wc -l`
+    ps -ef |grep VRTSvcs | grep haclus | grep -v grep | wc -l
   register: is_cluster_running
 
 - block:
